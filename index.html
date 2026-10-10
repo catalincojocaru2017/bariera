@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#3b3f47">
+<meta name="apple-mobile-web-app-title" content="Bariera">
+<title>Bariera de acasă</title>
+<meta property="og:title" content="Bariera de acasă">
+<meta property="og:description" content="Apasă butonul ca să ridici bariera de la intrare.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='13' width='28' height='7' rx='2' fill='%23e2373f'/%3E%3Crect x='8' y='13' width='5' height='7' fill='%23fff'/%3E%3Crect x='18' y='13' width='5' height='7' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&display=swap" rel="stylesheet">
+<style>
+  /* Layout: sky with the barrier scene on top, asphalt below holding the status, the button and the tips. */
+  :root {
+    --sky: #d6ecf7;
+    --asphalt: #3b3f47;
+    --asphalt-deep: #2c3036;
+    --sign: #ffcc29;
+    --ink: #1e2227;
+    --paper: #ffffff;
+    --muted: #c4c9d0;
+    --go: #2fbf71;
+    --red: #e2373f;
+    --zzz: #1e2227;
+    --display: "Bungee", "Arial Black", system-ui, sans-serif;
+    --body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --sky: #1d2b45; --zzz: #ffcc29; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --sky: #1d2b45; --zzz: #ffcc29; color-scheme: dark; }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    background: var(--asphalt);
+    color: var(--paper);
+    font: 18px/1.45 var(--body);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .visually-hidden {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap;
+  }
+
+  .sky {
+    display: flex;
+    justify-content: center;
+    background: var(--sky);
+    padding: calc(12px + env(safe-area-inset-top, 0px)) 0 0;
+  }
+  #scene { display: block; width: 100%; max-width: 520px; height: auto; }
+
+  #boom {
+    transform-box: view-box;
+    transform-origin: 220px 110px;
+    transition: transform .9s cubic-bezier(.3, 1.4, .5, 1);
+  }
+  .open #boom { transform: rotate(78deg); }
+
+  #car { transform: translateX(-28px); }
+  .open #car {
+    transform: translateX(420px);
+    transition: transform 2.2s cubic-bezier(.5, 0, .8, .4) .9s;
+  }
+
+  #lamp { fill: var(--red); transition: fill .3s; }
+  .open #lamp { fill: var(--go); }
+
+  .awake-face { opacity: 0; transition: opacity .2s; }
+  .sleepy-face, .zzz { transition: opacity .2s; }
+  .awake .awake-face { opacity: 1; }
+  .awake .sleepy-face, .awake .zzz { opacity: 0; }
+
+  .zzz text {
+    font-family: var(--display);
+    fill: var(--zzz);
+    transform-box: fill-box;
+    animation: float 2.6s ease-in-out infinite;
+    opacity: 0;
+  }
+  .zzz text:nth-child(2) { animation-delay: .6s; }
+  .zzz text:nth-child(3) { animation-delay: 1.2s; }
+  @keyframes float {
+    0%   { opacity: 0; transform: translate(0, 4px); }
+    30%  { opacity: 1; }
+    100% { opacity: 0; transform: translate(6px, -10px); }
+  }
+
+  .road {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding-inline: 16px;
+    padding-block: 0 calc(28px + env(safe-area-inset-bottom, 0px));
+    text-align: center;
+  }
+  .lane {
+    align-self: stretch;
+    height: 4px;
+    margin: 14px -16px 0;
+    background: repeating-linear-gradient(90deg, var(--muted) 0 26px, transparent 26px 50px);
+  }
+  #status {
+    margin: 0;
+    max-width: 30ch;
+    min-height: 2.9em;
+    font-size: 19px;
+    text-wrap: balance;
+  }
+  #go {
+    width: min(100%, 360px);
+    padding: 20px 24px;
+    font: 24px/1.1 var(--display);
+    color: var(--ink);
+    background: var(--sign);
+    border: 3px solid var(--ink);
+    border-radius: 14px;
+    box-shadow: inset 0 0 0 4px var(--sign), inset 0 0 0 7px var(--ink), 0 6px 0 var(--asphalt-deep);
+    cursor: pointer;
+    transition: transform .08s, box-shadow .08s, opacity .2s;
+  }
+  #go:active:not(:disabled) {
+    transform: translateY(4px);
+    box-shadow: inset 0 0 0 4px var(--sign), inset 0 0 0 7px var(--ink), 0 2px 0 var(--asphalt-deep);
+  }
+  #go:disabled { opacity: .6; cursor: default; font-size: 18px; }
+  #go:focus-visible, summary:focus-visible, #demo:focus-visible { outline: 3px solid var(--paper); outline-offset: 4px; }
+
+  #demo { color: var(--sign); font-size: 17px; }
+  #count { margin: 0; font-size: 15px; color: var(--muted); }
+
+  .tips {
+    width: min(100%, 360px);
+    text-align: left;
+    background: var(--asphalt-deep);
+    border-radius: 10px;
+    padding: 4px 16px;
+    font-size: 16px;
+  }
+  .tips summary { cursor: pointer; padding: 10px 0; color: var(--paper); }
+  .tips ul { margin: 0 0 12px; padding-left: 18px; display: grid; gap: 8px; color: var(--muted); }
+  .tips b { color: var(--paper); font-weight: 600; }
+
+  .note { margin: auto 0 0; max-width: 34ch; font-size: 14px; color: var(--muted); }
+
+  @media (prefers-reduced-motion: reduce) {
+    #boom, .open #car, #lamp, .awake-face, .sleepy-face, .zzz { transition-duration: .01s !important; transition-delay: 0s !important; }
+    .zzz text { animation: none; opacity: 1; }
+  }
+</style>
+</head>
+<body>
+<h1 class="visually-hidden">Bariera de la intrare</h1>
+
+<div class="sky">
+  <svg id="scene" viewBox="0 -42 360 212" role="img" aria-label="O barieră cu o gheretă care doarme și o mașină care așteaptă">
+    <defs>
+      <pattern id="stripes" patternUnits="userSpaceOnUse" width="24" height="12">
+        <rect width="12" height="12" fill="#e2373f"/>
+        <rect x="12" width="12" height="12" fill="#ffffff"/>
+      </pattern>
+    </defs>
+
+    <g id="car">
+      <path d="M14 136 L25 122 H60 L72 136 Z" fill="#2a8fd6" stroke="#1e2227" stroke-width="2" stroke-linejoin="round"/>
+      <rect x="0" y="136" width="88" height="22" rx="7" fill="#2a8fd6" stroke="#1e2227" stroke-width="2"/>
+      <path d="M24 135 L30 126 H45 V135 Z" fill="#d6ecf7"/>
+      <path d="M49 126 H58 L66 135 H49 Z" fill="#d6ecf7"/>
+      <rect x="84" y="141" width="4" height="6" rx="1" fill="#ffcc29"/>
+      <rect x="0" y="141" width="3" height="6" fill="#e2373f"/>
+      <circle cx="21" cy="160" r="9" fill="#1e2227"/>
+      <circle cx="21" cy="160" r="3.5" fill="#c4c9d0"/>
+      <circle cx="67" cy="160" r="9" fill="#1e2227"/>
+      <circle cx="67" cy="160" r="3.5" fill="#c4c9d0"/>
+    </g>
+
+    <rect x="214" y="106" width="12" height="64" rx="2" fill="#8a909a" stroke="#1e2227" stroke-width="2"/>
+    <g id="boom">
+      <rect x="70" y="104" width="152" height="12" rx="3" fill="url(#stripes)" stroke="#1e2227" stroke-width="2"/>
+    </g>
+    <circle cx="220" cy="110" r="6" fill="#1e2227"/>
+
+    <rect x="283" y="68" width="10" height="7" fill="#1e2227"/>
+    <circle id="lamp" cx="288" cy="63" r="7" stroke="#1e2227" stroke-width="2"/>
+    <rect x="248" y="86" width="84" height="84" rx="6" fill="#ffffff" stroke="#1e2227" stroke-width="2"/>
+    <rect x="242" y="74" width="96" height="16" rx="4" fill="#e2373f" stroke="#1e2227" stroke-width="2"/>
+    <rect x="260" y="98" width="60" height="40" rx="8" fill="#d6ecf7" stroke="#1e2227" stroke-width="2"/>
+    <rect x="268" y="148" width="44" height="14" rx="3" fill="none" stroke="#1e2227" stroke-width="1.5" opacity=".4"/>
+
+    <g class="sleepy-face" fill="none" stroke="#1e2227" stroke-width="2.5" stroke-linecap="round">
+      <path d="M270 115 q6 5 12 0 M294 115 q6 5 12 0"/>
+      <path d="M283 129 h10"/>
+    </g>
+    <g class="awake-face">
+      <circle cx="276" cy="113" r="5" fill="#1e2227"/>
+      <circle cx="300" cy="113" r="5" fill="#1e2227"/>
+      <circle cx="277.5" cy="111.5" r="1.5" fill="#ffffff"/>
+      <circle cx="301.5" cy="111.5" r="1.5" fill="#ffffff"/>
+      <path d="M279 125 q9 9 18 0" fill="none" stroke="#1e2227" stroke-width="2.5" stroke-linecap="round"/>
+    </g>
+    <g class="zzz" aria-hidden="true">
+      <text x="304" y="60" font-size="14">z</text>
+      <text x="316" y="46" font-size="12">z</text>
+      <text x="327" y="34" font-size="10">z</text>
+    </g>
+  </svg>
+</div>
+
+<main class="road">
+  <div class="lane" aria-hidden="true"></div>
+  <p id="status" role="status" aria-live="polite"></p>
+  <button id="go" type="button">Ridică bariera</button>
+  <a id="demo" href="#" hidden>Vezi cum arată (demo)</a>
+  <p id="count" hidden></p>
+
+  <details class="tips">
+    <summary>Pune butonul pe ecranul telefonului</summary>
+    <ul>
+      <li><b>Android:</b> în Chrome, meniul ⋮ → Adaugă pe ecranul de pornire.</li>
+      <li><b>iPhone:</b> în Safari, butonul Partajează → Adaugă pe ecranul principal.</li>
+      <li>Apasă cu 20–30 m înainte de barieră, ca să fie sus când ajungi.</li>
+      <li>Deschiderea paginii nu ridică bariera. Doar butonul o ridică.</li>
+    </ul>
+  </details>
+
+  <p class="note">Link personal, nu-l da mai departe. Soluție temporară până se reface lista de numere.</p>
+</main>
+
+<script>
+  // Comanda pleacă doar la apăsarea butonului, niciodată la deschiderea paginii,
+  // deci previzualizările din WhatsApp nu ridică bariera.
+  const WEBHOOK = 'https://trigger.macrodroid.com/15b6e4aa-f034-48e8-af54-b4b9a866c635/bariera';
+  const COOLDOWN = 20; // secunde între apăsări: telefonul-poartă primește o singură comandă pe apăsare
+
+  const scene = document.getElementById('scene');
+  const btn = document.getElementById('go');
+  const statusEl = document.getElementById('status');
+  const demoLink = document.getElementById('demo');
+  const countEl = document.getElementById('count');
+
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  };
+
+  // Codul vine din link (?u=...). Îl ținem minte, ca butonul de pe ecran să meargă și dacă se pierde din adresă.
+  let code = (new URLSearchParams(location.search).get('u') || '').trim();
+  if (code && code !== 'demo') store.set('bariera-u', code);
+  if (!code) code = store.get('bariera-u') || '';
+  let demo = code === 'demo';
+
+  const waiting = [
+    'Bariera se trezește…',
+    'Bariera își termină cafeaua…',
+    'Negociem cu bariera…',
+    'Căutăm coloana din Excel… glumeam, deschidem.'
+  ];
+  const done = ['Drum bun!', 'Bariera vă salută.', 'Bun venit acasă!'];
+  const pick = list => list[Math.floor(Math.random() * list.length)];
+  const say = text => { statusEl.textContent = text; };
+
+  function showCount() {
+    const n = parseInt(store.get('bariera-n') || '0', 10);
+    if (!n || demo) { countEl.hidden = true; return; }
+    countEl.hidden = false;
+    countEl.textContent = n === 1
+      ? 'Ai trezit bariera o dată de pe telefonul ăsta.'
+      : `Ai trezit bariera de ${n} ori de pe telefonul ăsta. Nu se supără.`;
+  }
+
+  function init() {
+    if (!code) {
+      btn.hidden = true;
+      demoLink.hidden = false;
+      say('Link-ul tău nu are cod. Deschide link-ul personal primit pe WhatsApp.');
+      return;
+    }
+    btn.hidden = false;
+    demoLink.hidden = true;
+    say(demo
+      ? 'Mod demo: bariera reală nu primește nimic.'
+      : 'Bariera doarme. Trezește-o când ajungi la intrare.');
+    showCount();
+  }
+
+  async function send() {
+    if (demo) return true;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    try {
+      await fetch(WEBHOOK + '?u=' + encodeURIComponent(code), {
+        mode: 'no-cors', cache: 'no-store', signal: ctrl.signal
+      });
+      return true;
+    } catch (e) {
+      return false;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  function reset() {
+    scene.classList.remove('open', 'awake');
+    btn.textContent = 'Ridică bariera';
+    btn.disabled = false;
+    say('Nu s-a ridicat? Mai apasă o dată.');
+  }
+
+  function cooldown() {
+    let left = COOLDOWN;
+    const tick = () => {
+      if (left <= 0) { reset(); return; }
+      btn.textContent = `Mai poți apăsa în ${left} s`;
+      if (left === COOLDOWN - 8) say(pick(done));
+      left -= 1;
+      setTimeout(tick, 1000);
+    };
+    tick();
+  }
+
+  btn.addEventListener('click', async () => {
+    if (btn.disabled) return;
+    btn.disabled = true;
+    if (navigator.vibrate) navigator.vibrate(30);
+    scene.classList.add('awake');
+    say(pick(waiting));
+
+    const ok = await send();
+    if (!ok) {
+      scene.classList.remove('awake');
+      btn.disabled = false;
+      say('Cererea n-a plecat: telefonul tău nu are internet. Pornește datele mobile și apasă din nou.');
+      return;
+    }
+
+    if (!demo) store.set('bariera-n', String(parseInt(store.get('bariera-n') || '0', 10) + 1));
+    showCount();
+    scene.classList.add('open');
+    say(demo
+      ? 'Demo: așa arată când merge. Pe bune, bariera se ridică în 5–10 secunde.'
+      : 'Gata, cererea a plecat. Bariera se ridică în 5–10 secunde.');
+    cooldown();
+  });
+
+  demoLink.addEventListener('click', e => {
+    e.preventDefault();
+    code = 'demo';
+    demo = true;
+    init();
+  });
+
+  init();
+</script>
+</body>
+</html>
