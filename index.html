@@ -159,6 +159,9 @@
     .zzz text { animation: none; opacity: 1; }
   }
 </style>
+<!-- Statistici anonime (Plausible): fără cookie-uri, fără date personale, invizibil pentru vizitatori -->
+<script defer data-domain="catalincojocaru2017.github.io" src="https://plausible.io/js/script.js"></script>
+<script>window.plausible=window.plausible||function(){(window.plausible.q=window.plausible.q||[]).push(arguments)}</script>
 </head>
 <body>
 <h1 class="visually-hidden">Bariera de la intrare</h1>
@@ -344,7 +347,10 @@
       return;
     }
 
-    if (!demo) store.set('bariera-n', String(parseInt(store.get('bariera-n') || '0', 10) + 1));
+    if (!demo) {
+      store.set('bariera-n', String(parseInt(store.get('bariera-n') || '0', 10) + 1));
+      try { window.plausible('Bariera'); } catch (e) {}   // statistică: o apăsare reușită
+    }
     showCount();
     scene.classList.add('open');
     say(demo
