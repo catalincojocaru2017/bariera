@@ -369,9 +369,34 @@
   };
 
   // Codul vine din link (?u=...). Îl ținem minte, ca butonul de pe ecran să meargă și dacă se pierde din adresă.
-  let code = (new URLSearchParams(location.search).get('u') || '').trim();
-  if (code && code !== 'demo') store.set('bariera-u', code);
-  if (!code) code = store.get('bariera-u') || '';
+  // Linkul unic (token de 26 de caractere) are prioritate: dacă e salvat pe telefon și cineva deschide pagina simplă sau un link vechi,
+  // adresa se înlocuiește pe loc cu linkul personal (la fel ca o redirecționare), deci „Adaugă pe ecranul de pornire” și marcajele salvează linkul unic.
+  const TOKEN_RE = /^[abcdefghjkmnpqrstuvwxyz2-9]{26}$/;
+  function setUrlCode(c) {
+    try {
+      const p = new URLSearchParams(location.search);
+      if (c) p.set('u', c); else p.delete('u');
+      const q = p.toString();
+      history.replaceState(null, '', location.pathname + (q ? '?' + q : ''));
+    } catch (e) {}
+  }
+  const urlCode = (new URLSearchParams(location.search).get('u') || '').trim();
+  const savedToken = store.get('bariera-t') || '';
+  let code;
+  if (urlCode === 'demo') {
+    code = 'demo';
+  } else if (TOKEN_RE.test(urlCode)) {
+    code = urlCode;
+    store.set('bariera-t', code); store.set('bariera-u', code);
+  } else if (TOKEN_RE.test(savedToken)) {
+    code = savedToken;
+    store.set('bariera-u', code);
+    setUrlCode(code);
+  } else {
+    code = urlCode;
+    if (code) store.set('bariera-u', code);
+    if (!code) code = store.get('bariera-u') || '';
+  }
   let demo = code === 'demo';
 
   const waiting = [
@@ -480,6 +505,8 @@
   // Linkul nu mai e valid (necunoscut sau dezactivat): ascundem butonul și arătăm formularul.
   function invalidate(msg) {
     store.del('bariera-u');
+    store.del('bariera-t');
+    setUrlCode('');
     code = '';
     statusFor = null;
     graceText = '';
@@ -599,6 +626,7 @@
 
     // Succes: tokenul rămâne pe telefon și în adresă, ca „Adaugă pe ecranul de pornire” să salveze linkul unic.
     store.set('bariera-u', d.token);
+    store.set('bariera-t', d.token);
     code = d.token;
     demo = false;
     statusFor = code;                    // tocmai a fost emis, nu mai întrebăm serverul
