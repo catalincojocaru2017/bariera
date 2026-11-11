@@ -10,10 +10,18 @@
 <meta property="og:title" content="Bariera de acasă">
 <meta property="og:description" content="Apasă butonul ca să ridici bariera de la intrare.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='13' width='28' height='7' rx='2' fill='%23e2373f'/%3E%3Crect x='8' y='13' width='5' height='7' fill='%23fff'/%3E%3Crect x='18' y='13' width='5' height='7' fill='%23fff'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bungee&display=swap" rel="stylesheet">
+<link rel="preload" href="bungee-ro.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+  /* Bungee (SIL OFL 1.1, vezi Bungee-OFL.txt), găzduit lângă pagină, într-un singur fișier cu literele latine + latin-ext
+     (inclusiv Ă ă Ț ț Ș ș). De la Google Fonts venea în două fișiere separate: dacă unul nu se încărca, butonul apărea
+     amestecat (litere obișnuite + doar Ă/Ț groase). Un singur fișier = ori tot textul în Bungee, ori tot în fontul de rezervă. */
+  @font-face {
+    font-family: "Bungee";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("bungee-ro.woff2") format("woff2");
+  }
   /* Layout: sky with the barrier scene on top, asphalt below holding the status, the button and the tips. */
   :root {
     --sky: #d6ecf7;
