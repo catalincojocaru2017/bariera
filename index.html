@@ -221,7 +221,8 @@
     background: rgba(226, 55, 63, .18); border-left: 4px solid var(--red); border-radius: 6px;
   }
   .okline { margin: 0 0 8px; font-weight: 600; color: var(--go); }
-  #linkBox { font-size: 14px; }
+  /* Fără alternate contextuale: Inter transformă „x” între cifre în „×”, iar linkul trebuie să se vadă exact cum e. */
+  #linkBox { font-size: 14px; font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Roboto Mono", monospace; font-feature-settings: "calt" 0, "liga" 0; font-variant-ligatures: none; letter-spacing: 0; }
   .privacy { margin: 14px 0 0; font-size: 13px; color: var(--muted); }
 
   @media (prefers-reduced-motion: reduce) {
