@@ -248,6 +248,7 @@
     margin: 14px 0 0; padding: 10px 12px; font-size: 16px;
     background: rgba(226, 55, 63, .18); border-left: 4px solid var(--red); border-radius: 6px;
   }
+  .card .cta.wa { display: block; margin-top: 12px; background: #25d366; }
   .okline { margin: 0 0 8px; font-weight: 600; color: var(--go); }
   /* Fără alternate contextuale: Inter transformă „x” între cifre în „×”, iar linkul trebuie să se vadă exact cum e. */
   #linkBox { font-size: 14px; font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Roboto Mono", monospace; font-feature-settings: "calt" 0, "liga" 0; font-variant-ligatures: none; letter-spacing: 0; }
@@ -341,20 +342,21 @@
     <form id="regForm" novalidate>
       <p class="hint">Scrie numărul de telefon înregistrat în lista oficială administrată de MAC Capital. Verific pe loc dacă apare pe listă.</p>
       <label for="f-phone">Număr de telefon</label>
-      <input id="f-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="07xx xxx xxx" maxlength="24" required>
+      <input id="f-phone" name="f1" type="tel" inputmode="tel" autocomplete="off" placeholder="07xx xxx xxx" maxlength="24" required>
       <div class="row">
         <div>
           <label for="f-street">Strada</label>
-          <input id="f-street" name="street" type="text" autocomplete="off" placeholder="ex. Praga" maxlength="40" required>
+          <input id="f-street" name="f2" type="text" autocomplete="off" readonly placeholder="ex. Praga" maxlength="40" required>
         </div>
         <div class="nr">
           <label for="f-nr">Nr. casă</label>
-          <input id="f-nr" name="nr" type="text" autocomplete="off" maxlength="10" required>
+          <input id="f-nr" name="f3" type="text" autocomplete="off" readonly maxlength="10" required>
         </div>
       </div>
       <button id="regSubmit" class="cta" type="submit">Verifică și cere link</button>
     </form>
     <p id="regMsg" class="regmsg" role="alert" hidden></p>
+    <button id="regWa" class="cta wa" type="button" hidden>Copiază mesajul pentru grup</button>
     <div id="regOk" hidden>
       <p class="okline">Număr găsit pe listă. Linkul tău unic:</p>
       <input id="linkBox" type="text" readonly aria-label="Linkul tău unic">
@@ -390,7 +392,22 @@
   const banner = $('banner'), graceDate = $('graceDate'), bannerBtn = $('bannerBtn');
   const reg = $('reg'), regForm = $('regForm'), regMsg = $('regMsg'), regSubmit = $('regSubmit');
   const regOk = $('regOk'), linkBox = $('linkBox'), copyBtn = $('copyBtn');
-  const fPhone = $('f-phone'), fStreet = $('f-street'), fNr = $('f-nr');
+  const fPhone = $('f-phone'), fStreet = $('f-street'), fNr = $('f-nr'), regWa = $('regWa');
+  let waText = '';   // mesajul pregătit pentru administrator; omul îl lipește singur în grupul de WhatsApp (niciun număr în pagină)
+  regWa.addEventListener('click', async () => {
+    let copied = false;
+    if (navigator.clipboard) { try { await navigator.clipboard.writeText(waText); copied = true; } catch (e) {} }
+    if (!copied) {
+      const ta = document.createElement('textarea');
+      ta.value = waText; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+      document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, waText.length);
+      try { copied = document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+    regWa.textContent = copied ? 'Copiat ✓ Lipește-l în grupul de WhatsApp' : 'Nu s-a putut copia. Scrie în grup problema și datele completate';
+  });
+  // Strada și numărul casei se deblochează abia când le atingi: browserul nu mai poate completa automat adresa lui salvată.
+  [fStreet, fNr].forEach(f => ['focus', 'touchstart', 'mousedown'].forEach(ev => f.addEventListener(ev, () => f.removeAttribute('readonly'), { once: true })));
 
   const store = {
     get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
@@ -631,6 +648,7 @@
   regForm.addEventListener('submit', async e => {
     e.preventDefault();
     regMsg.hidden = true;
+    regWa.hidden = true;
     [fPhone, fStreet, fNr].forEach(f => f.removeAttribute('aria-invalid'));
 
     const phone = fPhone.value.trim();
@@ -652,7 +670,25 @@
     if (!r.net) return regError(netMessage(r).replace('Cererea n-a plecat: ', ''));
     const d = r.data;
     if (!d) return regError('Răspuns neașteptat de la server. Încearcă din nou peste un minut.');
-    if (!d.ok) return regError(d.msg || 'Nu a mers. Încearcă din nou.', d.code === 'not_listed' || d.code === 'bad_phone' ? fPhone : null);
+    if (!d.ok) {
+      const err = regError(d.msg || 'Nu a mers. Încearcă din nou.', d.code === 'not_listed' || d.code === 'bad_phone' ? fPhone : null);
+      // Cererea pregătită pentru administrator: problema + exact ce a completat omul în formular.
+      const problems = {
+        already: 'Pentru numărul meu a fost deja emis un link și nu mai am linkul.',
+        not_listed: 'Numărul meu nu apare pe lista autorizată.',
+        revoked_reg: 'Linkul pentru numărul meu a fost dezactivat.',
+        throttled: 'Am primit mesajul „Prea multe încercări”.'
+      };
+      if (problems[d.code]) {
+        const text = 'Bună! Am o problemă cu linkul barierei de la My Corbeanca.\n' +
+          'Problema: ' + problems[d.code] + '\n' +
+          'Am completat în cerere: telefon ' + phone + ', strada ' + street + ', nr. casă ' + nr + '.';
+        waText = text;
+        regWa.textContent = 'Copiază mesajul pentru grup';
+        regWa.hidden = false;
+      }
+      return err;
+    }
 
     // Succes: tokenul rămâne pe telefon și în adresă, ca „Adaugă pe ecranul de pornire” să salveze linkul unic.
     store.set('bariera-u', d.token);
