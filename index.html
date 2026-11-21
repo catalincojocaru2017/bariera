@@ -271,7 +271,7 @@
 
 <div id="banner" class="banner" role="alert" hidden>
   <span class="tag">⚠ ATENȚIE</span>
-  <p><b class="big">Linkul tău vechi se oprește pe <span id="graceDate"></span></b>
+  <p><b class="big">Linkul tău vechi se oprește pe <span id="graceDate">29.11.2026</span></b>
   După această dată bariera se ridică doar cu link personal. Cere-l acum, durează 30 de secunde.</p>
   <button type="button" id="bannerBtn" class="cta2">Cere link unic →</button>
 </div>
@@ -523,8 +523,12 @@
 
   let graceText = '';   // data până la care merge linkul vechi (doar dacă serverul a recunoscut un cod vechi)
   function init() {
-    graceDate.textContent = graceText;
-    banner.hidden = !(graceText && code && !demo);
+    if (graceText) graceDate.textContent = graceText;
+    // Un cod care nu arată a link personal (26 de caractere) e aproape sigur un link vechi: arătăm bannerul din prima,
+    // fără să așteptăm serverul (altfel apărea cu 1–2 s întârziere și împingea pagina în jos). Serverul doar confirmă data;
+    // dacă codul se dovedește invalid, bannerul dispare odată cu codul.
+    const looksLegacy = !!code && !demo && !TOKEN_RE.test(code);
+    banner.hidden = !(code && !demo && (graceText || looksLegacy));
     if (!code) {
       btn.hidden = true;
       demoLink.hidden = false;
