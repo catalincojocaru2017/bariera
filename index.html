@@ -415,6 +415,19 @@
     del(k) { try { localStorage.removeItem(k); } catch (e) {} }
   };
 
+  // Id aleator al acestui telefon/browser (nu conține date personale). Se trimite la apăsare, ca administratorul să vadă
+  // dacă același link e folosit pe mai multe dispozitive.
+  const deviceId = (() => {
+    let d = store.get('bariera-d') || '';
+    if (!/^[a-z0-9]{8,16}$/.test(d)) {
+      d = '';
+      try { const a = new Uint8Array(10); crypto.getRandomValues(a); d = Array.from(a, x => 'abcdefghjkmnpqrstuvwxyz23456789'[x % 31]).join(''); }
+      catch (e) { d = Math.random().toString(36).slice(2, 12); }
+      store.set('bariera-d', d);
+    }
+    return d;
+  })();
+
   // Codul vine din link (?u=...). Îl ținem minte, ca butonul de pe ecran să meargă și dacă se pierde din adresă.
   // Linkul unic (token de 26 de caractere) are prioritate: dacă e salvat pe telefon și cineva deschide pagina simplă sau un link vechi,
   // adresa se înlocuiește pe loc cu linkul personal (la fel ca o redirecționare), deci „Adaugă pe ecranul de pornire” și marcajele salvează linkul unic.
@@ -506,7 +519,7 @@
   }
 
   async function send() {
-    const r = await callApi({ a: 'open', t: code }, 15000);
+    const r = await callApi({ a: 'open', t: code, d: deviceId }, 15000);
     if (!r.net) return { ok: false, msg: netMessage(r) };
     const d = r.data;
     if (!d) return { ok: false, msg: 'Răspuns neașteptat de la server. Mai apasă o dată.' };
