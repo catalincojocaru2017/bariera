@@ -198,6 +198,12 @@
   }
   .banner .cta2:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0, 0, 0, .35); }
   .banner .cta2:focus-visible { outline: 3px solid var(--paper); outline-offset: 3px; }
+  /* După tăiere: linkul vechi nu mai merge. Banner roșu + butonul principal gri și blocat. */
+  .banner.exp { background: var(--red); color: #fff; box-shadow: 0 6px 0 var(--red), 0 10px 18px rgba(0, 0, 0, .35); }
+  .banner.exp .tag { background: #fff; color: var(--red); }
+  .banner.exp .big span { color: var(--sign); }
+  .banner.exp .cta2 { background: var(--sign); color: var(--ink); }
+  #go.off { font-size: 24px; opacity: .5; filter: grayscale(1); cursor: not-allowed; }
   @keyframes bannerPulse {
     0%, 100% { filter: brightness(1); }
     50% { filter: brightness(1.12); }
@@ -270,9 +276,16 @@
 <h1 class="visually-hidden">Bariera de la intrare</h1>
 
 <div id="banner" class="banner" role="alert" hidden>
-  <span class="tag">⚠ ATENȚIE</span>
-  <p><b class="big">Linkul tău vechi se oprește pe <span id="graceDate">29.11.2026</span></b>
-  După această dată bariera se ridică doar cu link personal. Cere-l acum, durează 30 de secunde.</p>
+  <div id="bnOk">
+    <span class="tag">⚠ ATENȚIE</span>
+    <p><b class="big">Linkul tău vechi se oprește pe <span id="graceDate">22.11.2026</span></b>
+    După această dată bariera se ridică doar cu link personal. Cere-l acum, durează 30 de secunde.</p>
+  </div>
+  <div id="bnExp" hidden>
+    <span class="tag">⛔ LINK OPRIT</span>
+    <p><b class="big">Linkul tău vechi <span>nu mai merge</span></b>
+    Bariera se ridică doar cu link personal. Cere-l acum, durează 30 de secunde.</p>
+  </div>
   <button type="button" id="bannerBtn" class="cta2">Cere link unic →</button>
 </div>
 
@@ -535,6 +548,11 @@
   }
 
   let graceText = '';   // data până la care merge linkul vechi (doar dacă serverul a recunoscut un cod vechi)
+  // Ultima zi în care mergeau linkurile vechi. Doar un indiciu ca banner-ul roșu să apară imediat după miezul nopții,
+  // fără să aștepte serverul; serverul rămâne autoritatea (dacă el spune că linkul merge, indiciul e ignorat).
+  const GRACE_HINT = '2026-11-22';
+  let legacyExpired = false;
+  try { legacyExpired = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Bucharest' }).format(new Date()) > GRACE_HINT; } catch (e) {}
   function init() {
     if (graceText) graceDate.textContent = graceText;
     // Un cod care nu arată a link personal (26 de caractere) e aproape sigur un link vechi: arătăm bannerul din prima,
@@ -542,6 +560,24 @@
     // dacă codul se dovedește invalid, bannerul dispare odată cu codul.
     const looksLegacy = !!code && !demo && !TOKEN_RE.test(code);
     banner.hidden = !(code && !demo && (graceText || looksLegacy));
+    // Link vechi după perioada de grație: banner roșu, butonul principal gri și blocat, formularul deschis.
+    const expiredNow = looksLegacy && legacyExpired && !graceText;
+    banner.classList.toggle('exp', expiredNow);
+    $('bnOk').hidden = expiredNow;
+    $('bnExp').hidden = !expiredNow;
+    if (expiredNow) {
+      btn.hidden = false;
+      btn.disabled = true;
+      btn.classList.add('off');
+      scene.classList.remove('open', 'awake');
+      demoLink.hidden = true;
+      say('Linkul vechi nu mai funcționează. Cere un link unic mai jos.');
+      countEl.hidden = true;
+      reg.hidden = false;          // fără derulare: bannerul roșu rămâne în capul ecranului
+      checkStatus();
+      return;
+    }
+    if (btn.classList.contains('off')) { btn.classList.remove('off'); btn.disabled = false; }
     if (!code) {
       btn.hidden = true;
       demoLink.hidden = false;
@@ -589,9 +625,11 @@
     if (!r.net || !r.data || asked !== code) return;
     const d = r.data;
     if (d.ok) {
-      if (d.kind === 'legacy' && d.grace) { graceText = d.grace; init(); }
+      if (d.kind === 'legacy' && d.grace) { graceText = d.grace; legacyExpired = false; init(); }
       return;
     }
+    // Cod care nu arată a link personal și pe care serverul nu-l mai recunoaște = link vechi oprit: îl păstrăm și arătăm bannerul roșu.
+    if (d.code === 'invalid' && !TOKEN_RE.test(asked)) { graceText = ''; legacyExpired = true; init(); return; }
     if (d.code === 'invalid' || d.code === 'revoked') invalidate(d.msg);
   }
 
