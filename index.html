@@ -264,6 +264,22 @@
     #boom, .open #car, #lamp, .awake-face, .sleepy-face, .zzz { transition-duration: .01s !important; transition-delay: 0s !important; }
     .zzz text { animation: none; opacity: 1; }
   }
+
+  /* Temă de sărbători: doar pentru link personal, 26 noiembrie – 6 ianuarie (?craciun=1 o arată oricând). */
+  html:not(.xmas) .xmas-only { display: none; }
+  html.xmas { --sky: #1d2b45; --zzz: #ffcc29; }
+  .bulb { animation: twinkle 1.6s ease-in-out infinite; }
+  .bulb:nth-of-type(2n) { animation-delay: .5s; }
+  .bulb:nth-of-type(3n) { animation-delay: 1s; }
+  @keyframes twinkle { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+  #xmasMsg { margin: -6px 0 0; font: 18px/1.3 var(--display); color: var(--sign); }
+  #snow { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 3; }
+  #snow i {
+    position: absolute; top: -12px; border-radius: 50%; background: #fff;
+    animation: snowfall linear infinite;
+  }
+  @keyframes snowfall { to { transform: translate3d(28px, 105vh, 0); } }
+  @media (prefers-reduced-motion: reduce) { #snow { display: none; } .bulb { animation: none; } }
 </style>
 <!-- Privacy-friendly analytics by Plausible -->
 <script async src="https://plausible.io/js/pa-4TiTnBXa2jhz9Q4aER1CT.js"></script>
@@ -297,6 +313,18 @@
         <rect x="12" width="12" height="12" fill="#ffffff"/>
       </pattern>
     </defs>
+
+    <g class="xmas-only" aria-hidden="true" stroke="#1e2227" stroke-width="2" stroke-linejoin="round" transform="translate(152 170) scale(.75) translate(-152 -170)">
+      <rect x="147" y="160" width="10" height="10" fill="#8a5a34"/>
+      <path d="M152 112 L168 134 H161 L175 150 H167 L182 162 H122 L137 150 H129 L143 134 H136 Z" fill="#1f8a54"/>
+      <path d="M152 99 l3 7 7 .6 -5.400 4.600 1.800 7 -6.400 -3.800 -6.400 3.800 1.800 -7 -5.400 -4.600 7 -.6 Z" fill="#ffcc29" stroke-width="1.5"/>
+      <g stroke="none">
+        <circle class="bulb" cx="147" cy="130" r="3" fill="#e2373f"/>
+        <circle class="bulb" cx="160" cy="143" r="3" fill="#ffcc29"/>
+        <circle class="bulb" cx="141" cy="153" r="3" fill="#7fd0ff"/>
+        <circle class="bulb" cx="165" cy="156" r="3" fill="#ffffff"/>
+      </g>
+    </g>
 
     <g id="car">
       <path d="M14 136 L25 122 H60 L72 136 Z" fill="#2a8fd6" stroke="#1e2227" stroke-width="2" stroke-linejoin="round"/>
@@ -335,6 +363,18 @@
       <circle cx="301.5" cy="111.5" r="1.5" fill="#ffffff"/>
       <path d="M279 125 q9 9 18 0" fill="none" stroke="#1e2227" stroke-width="2.5" stroke-linecap="round"/>
     </g>
+    <g class="xmas-only" aria-hidden="true">
+      <!-- căciula stă în stânga acoperișului, ca să nu acopere lampa de stare -->
+      <path d="M247 75 C249 58 262 50 272 56 C264 56 266 66 272 75 Z" fill="#e2373f" stroke="#1e2227" stroke-width="2" stroke-linejoin="round"/>
+      <circle cx="273" cy="56" r="4.500" fill="#ffffff" stroke="#1e2227" stroke-width="1.5"/>
+      <rect x="244" y="71" width="32" height="7" rx="3.500" fill="#ffffff" stroke="#1e2227" stroke-width="1.5"/>
+      <path d="M246 91 q14 9 28 0 t28 0 t28 0" fill="none" stroke="#1f8a54" stroke-width="2"/>
+      <circle class="bulb" cx="253" cy="95" r="3" fill="#ffcc29"/>
+      <circle class="bulb" cx="274" cy="92" r="3" fill="#7fd0ff"/>
+      <circle class="bulb" cx="290" cy="96" r="3" fill="#2fbf71"/>
+      <circle class="bulb" cx="306" cy="92" r="3" fill="#e2373f"/>
+      <circle class="bulb" cx="324" cy="95" r="3" fill="#ffcc29"/>
+    </g>
     <g class="zzz" aria-hidden="true">
       <text x="304" y="60" font-size="14">z</text>
       <text x="316" y="46" font-size="12">z</text>
@@ -349,6 +389,8 @@
   <button id="go" type="button">Ridică bariera</button>
   <a id="demo" href="#" hidden>Vezi cum arată (demo)</a>
   <p id="count" hidden></p>
+  <p id="xmasMsg" class="xmas-only">Sărbători fericite! 🎄</p>
+  <div id="snow" class="xmas-only" aria-hidden="true"></div>
 
   <section id="reg" class="card" hidden aria-labelledby="regTitle">
     <h2 id="regTitle">Cere link unic</h2>
@@ -553,7 +595,28 @@
   const GRACE_HINT = '2026-11-22';
   let legacyExpired = false;
   try { legacyExpired = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Bucharest' }).format(new Date()) > GRACE_HINT; } catch (e) {}
+  // Tema de sărbători: numai cu link personal. Sezon: 26 noiembrie – 6 ianuarie (ora României).
+  function xmasSeason() {
+    if (new URLSearchParams(location.search).get('craciun') === '1') return true;
+    try {
+      const md = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Bucharest' }).format(new Date()).slice(5);   // LL-ZZ
+      return md >= '11-26' || md <= '01-06';
+    } catch (e) { return false; }
+  }
+  function applyXmas() {
+    const on = !demo && TOKEN_RE.test(code) && xmasSeason();
+    document.documentElement.classList.toggle('xmas', on);
+    const snow = $('snow');
+    if (!on || snow.childElementCount) return;
+    for (let i = 0; i < 36; i++) {
+      const f = document.createElement('i'), size = 2 + Math.random() * 4;
+      f.style.cssText = 'left:' + (Math.random() * 100) + '%;width:' + size + 'px;height:' + size + 'px;opacity:' + (0.4 + Math.random() * 0.5) +
+        ';animation-duration:' + (7 + Math.random() * 9) + 's;animation-delay:-' + (Math.random() * 16) + 's';
+      snow.appendChild(f);
+    }
+  }
   function init() {
+    applyXmas();
     if (graceText) graceDate.textContent = graceText;
     // Un cod care nu arată a link personal (26 de caractere) e aproape sigur un link vechi: arătăm bannerul din prima,
     // fără să așteptăm serverul (altfel apărea cu 1–2 s întârziere și împingea pagina în jos). Serverul doar confirmă data;
